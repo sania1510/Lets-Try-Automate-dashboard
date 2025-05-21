@@ -15,7 +15,6 @@ if 'processed_df' not in st.session_state:
     st.session_state.processed_df = None
 
 if uploaded_file:
-
     if uploaded_file.name.endswith('.csv'):
         df = pd.read_csv(uploaded_file)
     else:
@@ -47,7 +46,44 @@ if st.session_state.processed_df is not None:
     with st.sidebar:
         st.header("Filter Options")
 
-        # Apply date filter
+        # Date filter dropdown and custom range
+        min_date = min(df['Date'])
+        max_date = max(df['Date'])
+
+        date_filter_option = st.selectbox(
+            "Select Date Filter",
+            options=["Today", "Last 7 Days", "Last 30 Days", "Custom Range"]
+        )
+
+        if date_filter_option == "Today":
+            start_date = end_date = max_date
+        elif date_filter_option == "Last 7 Days":
+            start_date = max_date - datetime.timedelta(days=6)
+            end_date = max_date
+        elif date_filter_option == "Last 30 Days":
+            start_date = max_date - datetime.timedelta(days=29)
+            end_date = max_date
+        else:  # Custom Range
+            start_date, end_date = st.date_input(
+                "Select Custom Date Range",
+                value=(min_date, max_date),
+                min_value=min_date,
+                max_value=max_date
+            )
+
+        # Campaign filter
+        campaign_names = df['Campaign Name'].dropna().unique().tolist()
+        selected_campaign = st.selectbox("Select Campaign Name", options=["All"] + campaign_names, key="campaign")
+
+        # Targeting Type filter
+        targeting_types = df['Targeting Type'].dropna().unique().tolist()
+        selected_type = st.selectbox("Select Targeting Type", options=["All"] + targeting_types, key="type")
+
+        # Targeting Value filter
+        targeting_values = df['Targeting Value'].dropna().unique().tolist()
+        selected_value = st.selectbox("Select Targeting Value", options=["All"] + targeting_values, key="value")
+
+    # Apply date filter
     filtered_df = df[(df['Date'] >= start_date) & (df['Date'] <= end_date)]
 
     if selected_campaign != "All":
@@ -82,56 +118,6 @@ if st.session_state.processed_df is not None:
     fig_area = px.area(time_df, x='Date', y='Total Sales', title='Total Sales Trend Over Time', template='plotly_white')
     st.plotly_chart(fig_area, use_container_width=True)
 
-        # Campaign filter
-        campaign_names = df['Campaign Name'].dropna().unique().tolist()
-        selected_campaign = st.selectbox("Select Campaign Name", options=["All"] + campaign_names, key="campaign")
-
-        # Targeting Type filter
-        targeting_types = df['Targeting Type'].dropna().unique().tolist()
-        selected_type = st.selectbox("Select Targeting Type", options=["All"] + targeting_types, key="type")
-
-        # Targeting Value filter
-        targeting_values = df['Targeting Value'].dropna().unique().tolist()
-        selected_value = st.selectbox("Select Targeting Value", options=["All"] + targeting_values, key="value")
-
-    # Apply filters 
-    filtered_df = df[df['Date'] == selected_date]
-
-    if selected_campaign != "All":
-        filtered_df = filtered_df[filtered_df['Campaign Name'] == selected_campaign]
-
-    if selected_type != "All":
-        filtered_df = filtered_df[filtered_df['Targeting Type'] == selected_type]
-
-    if selected_value != "All":
-        filtered_df = filtered_df[filtered_df['Targeting Value'] == selected_value]
-
-    # DYNAMIC SUMS & ROI CALCULATION
-    if not filtered_df.empty:
-        total_budget_consumed = filtered_df['Estimated Budget Consumed'].sum()
-        total_sales_sum = filtered_df['Total Sales'].sum()
-
-        # Display metrics side by side
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric(label="Total Estimated Budget Consumed", value=f"{total_budget_consumed:,.2f}")
-        col2.metric(label="Total Sales", value=f"{total_sales_sum:,.2f}")
-
-        if total_budget_consumed > 0:
-            roi = (total_sales_sum ) / total_budget_consumed
-            roi_percentage = round(roi, 2)
-            col3.metric(label="ROI (Return on Investment)", value=f"{roi_percentage}")
-        else:
-            col3.warning("Budget Consumed is 0, cannot calculate ROI.")
-    else:
-        st.warning("Filtered data is empty or missing required columns for ROI calculation.")
-        
-    # Total Sales Over Time
-    st.subheader("Total Sales Over Time")
-    time_df = df.groupby('Date')['Total Sales'].sum().reset_index()
-    fig_area = px.area(time_df, x='Date', y='Total Sales', title='Total Sales Trend Over Time', template='plotly_white')
-    st.plotly_chart(fig_area, use_container_width=True)
-
     # Sales by Campaign Name
     st.subheader("Campaign Performance")
     campaign_df = filtered_df.groupby('Campaign Name')['Total Sales'].sum().reset_index().sort_values(by='Total Sales', ascending=False)
@@ -143,9 +129,8 @@ if st.session_state.processed_df is not None:
         st.plotly_chart(fig_campaign, use_container_width=True)
     else:
         st.info("No campaign data available for the selected filters.")
-        
-    #Estimated budget consumed by campaign performance
-        
+
+    # Estimated Budget Consumed by Campaign
     if not filtered_df.empty:
         st.subheader("Estimated Budget Consumed by Campaign Name")
         budget_campaign_df = filtered_df.groupby('Campaign Name').agg({
@@ -162,7 +147,7 @@ if st.session_state.processed_df is not None:
         st.plotly_chart(fig_budget, use_container_width=True)
 
     # ROI by Targeting Type
-    st.subheader(" ROI by Targeting Type")
+    st.subheader("ROI by Targeting Type")
     roi_df = filtered_df.groupby('Targeting Type').agg({
         'Estimated Budget Consumed': 'sum',
         'Total Sales': 'sum'
@@ -177,7 +162,7 @@ if st.session_state.processed_df is not None:
     else:
         st.info("ROI data not available for the selected filters.")
 
-    # HIDE UNWANTED COLUMNS
+    # Hide unwanted columns
     columns_to_hide = [
         'Most Viewed Position',
         'Pacing Type',
