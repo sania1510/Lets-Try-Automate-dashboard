@@ -47,10 +47,40 @@ if st.session_state.processed_df is not None:
     with st.sidebar:
         st.header("Filter Options")
 
-        # Date filter
-        min_date = min(df['Date'])
-        max_date = max(df['Date'])
-        selected_date = st.date_input("Select Date", min_value=min_date, max_value=max_date, value=min_date, key="date")
+        # Apply date filter
+    filtered_df = df[(df['Date'] >= start_date) & (df['Date'] <= end_date)]
+
+    if selected_campaign != "All":
+        filtered_df = filtered_df[filtered_df['Campaign Name'] == selected_campaign]
+
+    if selected_type != "All":
+        filtered_df = filtered_df[filtered_df['Targeting Type'] == selected_type]
+
+    if selected_value != "All":
+        filtered_df = filtered_df[filtered_df['Targeting Value'] == selected_value]
+
+    # Dynamic Metrics
+    if not filtered_df.empty:
+        total_budget_consumed = filtered_df['Estimated Budget Consumed'].sum()
+        total_sales_sum = filtered_df['Total Sales'].sum()
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric(label="Total Estimated Budget Consumed", value=f"{total_budget_consumed:,.2f}")
+        col2.metric(label="Total Sales", value=f"{total_sales_sum:,.2f}")
+
+        if total_budget_consumed > 0:
+            roi = total_sales_sum / total_budget_consumed
+            col3.metric(label="ROI (Return on Investment)", value=f"{roi:.2f}")
+        else:
+            col3.warning("Budget Consumed is 0, cannot calculate ROI.")
+    else:
+        st.warning("Filtered data is empty or missing required columns for ROI calculation.")
+
+    # Total Sales Over Time
+    st.subheader("Total Sales Over Time")
+    time_df = df.groupby('Date')['Total Sales'].sum().reset_index()
+    fig_area = px.area(time_df, x='Date', y='Total Sales', title='Total Sales Trend Over Time', template='plotly_white')
+    st.plotly_chart(fig_area, use_container_width=True)
 
         # Campaign filter
         campaign_names = df['Campaign Name'].dropna().unique().tolist()
