@@ -52,7 +52,7 @@ if st.session_state.processed_df is not None:
 
         date_filter_option = st.selectbox(
             "Select Date Filter",
-            options=["Today", "Last 7 Days", "Last 30 Days", "Custom Range"]
+            options=["Yesterday", "Last 7 Days", "Last 30 Days", "Custom Range"]
         )
 
         if date_filter_option == "Today":
