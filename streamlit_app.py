@@ -130,13 +130,12 @@ if st.session_state.processed_df is not None:
     else:
         st.info("No campaign data available for the selected filters.")
 
-    # Estimated Budget Consumed by Campaign
+        # Estimated Budget Consumed by Campaign
     if not filtered_df.empty:
         st.subheader("Estimated Budget Consumed by Campaign Name")
         budget_campaign_df = filtered_df.groupby('Campaign Name').agg({
             'Estimated Budget Consumed': 'sum'
         }).reset_index()
-
         budget_campaign_df = budget_campaign_df.sort_values(by='Estimated Budget Consumed', ascending=False)
 
         fig_budget = px.bar(budget_campaign_df,
