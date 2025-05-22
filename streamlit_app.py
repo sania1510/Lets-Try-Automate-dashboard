@@ -53,8 +53,7 @@ if st.session_state.processed_df is not None:
         date_filter_option = st.selectbox(
             "Select Date Filter",
             options=["Yesterday", "Last 7 Days", "Last 30 Days", "Custom Range"]
-        )
-
+)
         if date_filter_option == "Yesterday":
             yesterday = max_date - datetime.timedelta(days=1)
             start_date = end_date = yesterday
@@ -66,11 +65,12 @@ if st.session_state.processed_df is not None:
             end_date = max_date
         else:  # Custom Range
             start_date, end_date = st.date_input(
-                "Select Custom Date Range",
-                value=(min_date, max_date),
-                min_value=min_date,
-                max_value=max_date
-            )
+        "Select Custom Date Range",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date
+    )
+
 
         # Campaign filter
         campaign_names = df['Campaign Name'].dropna().unique().tolist()
