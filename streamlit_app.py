@@ -137,6 +137,8 @@ if st.session_state.processed_df is not None:
             'Estimated Budget Consumed': 'sum'
         }).reset_index()
 
+        budget_campaign_df = budget_campaign_df.sort_values(by='Estimated Budget Consumed', ascending=False)
+
         fig_budget = px.bar(budget_campaign_df,
                             x='Campaign Name',
                             y='Estimated Budget Consumed',
